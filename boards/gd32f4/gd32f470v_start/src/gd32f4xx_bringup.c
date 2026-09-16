@@ -32,6 +32,7 @@
 #include <errno.h>
 
 #include <nuttx/board.h>
+#include <arch/board/board.h>
 #include <nuttx/clock.h>
 #include <nuttx/kmalloc.h>
 #include <nuttx/mtd/mtd.h>
@@ -63,6 +64,10 @@
 #endif
 
 #include "gd32f470v_start.h"
+
+/* FireEye board self-test (gd32f4xx_selftest.c): LED heartbeat thread */
+int gd32_selftest_start(void);
+int gd32_fireeye_w5500_initialize(void);
 
 /****************************************************************************
  * Public Functions
@@ -407,6 +412,41 @@ int gd32_bringup(void)
       syslog(LOG_ERR, "ERROR: gd32_campreview_start() failed: %d\n", ret);
     }
 #endif
+
+  /* Start the FireEye self-test heartbeat thread (LED liveness) */
+
+  ret = gd32_selftest_start();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: gd32_selftest_start() failed: %d\n", ret);
+    }
+
+  /* FireEye hardware: ADC (current/temperature), alarm outputs, button */
+
+  ret = gd32_fireeye_hw_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: gd32_fireeye_hw_initialize() failed: %d\n", ret);
+    }
+
+  /* FireEye OLED uses I2C1: register /dev/i2c1 */
+
+  ret = gd32_fireeye_i2c_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: gd32_fireeye_i2c_initialize() failed: %d\n", ret);
+    }
+
+#ifdef CONFIG_NET_W5500
+  /* W5500 Ethernet: init after the OS is up (up_initialize is too early) */
+
+  ret = gd32_fireeye_w5500_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: gd32_fireeye_w5500_initialize() failed: %d\n", ret);
+    }
+#endif
+
 
   return ret;
 }

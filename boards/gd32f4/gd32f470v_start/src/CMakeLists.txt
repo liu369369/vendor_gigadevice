@@ -36,6 +36,17 @@ else()
   list(APPEND SRCS gd32f4xx_userleds.c)
 endif()
 
+# FireEye board self-test: LED heartbeat (no console required)
+list(APPEND SRCS gd32f4xx_selftest.c)
+
+# FireEye board hardware: ADC sampling / alarm outputs / button / I2C1
+list(APPEND SRCS gd32f4xx_fireeye_hw.c)
+
+# FireEye W5500 Ethernet (built only when CONFIG_NET_W5500 is enabled)
+if(CONFIG_NET_W5500)
+  list(APPEND SRCS gd32f4xx_w5500.c)
+endif()
+
 if(CONFIG_ARCH_BUTTONS)
   list(APPEND SRCS gd32f4xx_buttons.c)
 endif()

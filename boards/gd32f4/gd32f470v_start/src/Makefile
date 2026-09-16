@@ -44,6 +44,17 @@ else
 CSRCS += gd32f4xx_userleds.c
 endif
 
+# FireEye board self-test: LED heartbeat (no console required)
+CSRCS += gd32f4xx_selftest.c
+
+# FireEye board hardware: ADC sampling / alarm outputs / button / I2C1
+CSRCS += gd32f4xx_fireeye_hw.c
+
+# FireEye W5500 Ethernet
+ifeq ($(CONFIG_NET_W5500),y)
+CSRCS += gd32f4xx_w5500.c
+endif
+
 ifeq ($(CONFIG_ARCH_BUTTONS),y)
 CSRCS += gd32f4xx_buttons.c
 endif

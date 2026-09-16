@@ -33,6 +33,9 @@
 
 #include "gd32f470v_start.h"
 
+/* FireEye board self-test (gd32f4xx_selftest.c): earliest liveness hint */
+void gd32_selftest_early(void);
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -50,6 +53,10 @@
 
 void gd32_boardinitialize(void)
 {
+  /* Clock is up now: blink the on-board LED twice to signal boot */
+
+  gd32_selftest_early();
+
 #ifdef CONFIG_ARCH_LEDS
   /* Configure on-board LEDs if LED support has been selected. */
 

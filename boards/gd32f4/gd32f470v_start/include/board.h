@@ -47,14 +47,14 @@
  *
  * This is the default configuration:
  *   System clock source           : PLL (HXTAL)
- *   SYSCLK(Hz)                    : 200000000    Determined by PLL config
- *   HCLK(Hz)                      : 200000000    (GD32_SYSCLK_FREQUENCY)
+ *   SYSCLK(Hz)                    : 168000000    Determined by PLL config
+ *   HCLK(Hz)                      : 168000000    (GD32_SYSCLK_FREQUENCY)
  *   AHB Prescaler                 : 1            (GD32_RCU_CFG0_AHB_PSC)
  *   APB2 Prescaler                : 2            (GD32_RCU_CFG0_APB2_PSC)
  *   APB1 Prescaler                : 4            (GD32_RCU_CFG0_APB1_PSC)
  *   HXTAL value(Hz)               : 25000000     (GD32_BOARD_XTAL)
  *   PLLM                          : 25           (GD32_PLL_PLLM)
- *   PLLN                          : 400          (RCU_PLL_PLLN)
+ *   PLLN                          : 336          (RCU_PLL_PLLN)
  *   PLLP                          : 2            (GD32_PLL_PLLP)
  *   PLLQ                          : 7            (GD32_PLL_PLLQ)
  */
@@ -253,10 +253,10 @@ typedef enum
 
 /* Alternate function pin selections ****************************************/
 
-/* USART0: RX=PA10, TX=PA9 */
+/* USART0: RX=PB7, TX=PB6 */
 
-#define GPIO_USART0_RX  GPIO_USART0_RX_1
-#define GPIO_USART0_TX  GPIO_USART0_TX_1
+#define GPIO_USART0_RX  GPIO_USART0_RX_3
+#define GPIO_USART0_TX  GPIO_USART0_TX_3
 
 #if defined(CONFIG_SERIAL_IFLOWCONTROL) && defined(CONFIG_USART0_IFLOWCONTROL)
 #  define GPIO_USART0_RTS GPIO_USART0_RTS_1
@@ -288,7 +288,54 @@ typedef enum
 #define GPIO_I2C0_SCL   GPIO_I2C0_SCL_1
 #define GPIO_I2C0_SDA   GPIO_I2C0_SDA_1
 
+/* I2C1: SCL=PB10, SDA=PB11
+ *
+ * FireEye OLED uses I2C1 (PB10=SCL / PB11=SDA, on the JP5 header).
+ * I2C0 is not usable: its PB6/PB7 pins are the USART0 console pins.
+ */
+
+#define GPIO_I2C1_SCL   GPIO_I2C1_SCL_1
+#define GPIO_I2C1_SDA   GPIO_I2C1_SDA_2
+
+/* FireEye board hardware interface, in gd32f4xx_fireeye_hw.c ***************/
+
+#include <stdbool.h>
+
+int  gd32_fireeye_hw_initialize(void);
+int  gd32_fireeye_adc_sample(int channel);
+void gd32_fireeye_set_buzzer(bool on);
+void gd32_fireeye_set_relay(bool energized);
+bool gd32_fireeye_key_pressed(void);
+int  gd32_fireeye_i2c_initialize(void);
+void gd32_fireeye_set_alarm_led(bool on);
+void gd32_fireeye_pin_raw(int which, bool high);
+int  gd32_fireeye_w5500_fixup(FAR const uint8_t *mac);
+
 /* SPI5 flash: MISO=PG12, MOSI=PG14, SCK=PG13, CS=PG9 */
+
+
+/* SPI1 chip selects: PB12 = W25Q64 flash, PE7 = W5500 Ethernet *************/
+
+/* SPI1 signals: SCK=PB13, MISO=PB14, MOSI=PB15 (W5500/W25Q64 shared) */
+
+#define GPIO_SPI1_SCK        GPIO_SPI1_SCK_3
+#define GPIO_SPI1_MISO       GPIO_SPI1_MISO_1
+#define GPIO_SPI1_MOSI       GPIO_SPI1_MOSI_1
+
+#define GPIO_SPI1_SCK_PIN    ((GPIO_SPI1_SCK  & ~GPIO_CFG_SPEED_MASK) | GPIO_CFG_SPEED_25MHZ)
+#define GPIO_SPI1_MISO_PIN   ((GPIO_SPI1_MISO & ~GPIO_CFG_SPEED_MASK) | GPIO_CFG_SPEED_25MHZ)
+#define GPIO_SPI1_MOSI_PIN   ((GPIO_SPI1_MOSI & ~GPIO_CFG_SPEED_MASK) | GPIO_CFG_SPEED_25MHZ)
+
+
+#define GPIO_SPI1_FLASH_CSPIN   (GPIO_CFG_PORT_B | GPIO_PIN12_OUTPUT)
+#define GPIO_SPI1_CSPIN         GPIO_SPI1_FLASH_CSPIN
+#define GPIO_SPI1_ETH_CSPIN     (GPIO_CFG_PORT_E | GPIO_PIN7_OUTPUT)
+
+/* W5500 control pins: RST = PE9, INT = PE11 (active low, falling edge) */
+
+#define GPIO_W5500_RESET        (GPIO_CFG_PORT_E | GPIO_PIN9_OUTPUT)
+#define GPIO_W5500_INTR         (GPIO_CFG_MODE_INPUT | GPIO_CFG_PUPD_PULLUP | \
+                                 GPIO_CFG_PORT_E | GPIO_CFG_PIN_11)
 
 #define GPIO_SPI5_CSPIN     (GPIO_CFG_PORT_G | GPIO_PIN9_OUTPUT)
 

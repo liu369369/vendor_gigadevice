@@ -141,7 +141,16 @@ void gd32_spi1select(struct spi_dev_s *dev, uint32_t devid,
   spiinfo("devid: %d CS: %s\n", (int)devid,
            selected ? "assert" : "de-assert");
 
-  gd32_gpio_write(GPIO_SPI1_CSPIN, !selected);
+  /* SPI1 has two slaves: W25Q64 flash (PB12) and W5500 (PE7), by devid */
+
+  if (devid == SPIDEV_ETHERNET(0))
+    {
+      gd32_gpio_write(GPIO_SPI1_ETH_CSPIN, !selected);
+    }
+  else
+    {
+      gd32_gpio_write(GPIO_SPI1_CSPIN, !selected);
+    }
 }
 
 uint8_t gd32_spi1status(struct spi_dev_s *dev, uint32_t devid)
