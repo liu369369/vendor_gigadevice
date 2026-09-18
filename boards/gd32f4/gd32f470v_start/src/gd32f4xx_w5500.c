@@ -62,6 +62,13 @@
 #define W5500_POLL_FALLBACK   1
 #define W5500_POLL_INTERVAL   10000
 
+/* Periodic diagnostics: dump the chip registers every 10s and print the
+ * interrupt counter.  Keep this OFF for normal use -- at 115200 baud it
+ * floods the console and interleaves with the application output.
+ * Set to 1 only while bringing up the W5500 wiring. */
+
+#define W5500_VERBOSE_DIAG    0
+
 /* Diagnostic use: W5500 block select bits (same as the driver) */
 
 #define W5500_DBG_BSB_COMMON_REGS     0x00u
@@ -88,8 +95,10 @@ static uint8_t  w5500_dbg_read8(FAR struct spi_dev_s *spi, uint8_t bsb,
                                 uint16_t addr);
 static void     w5500_dbg_write8(FAR struct spi_dev_s *spi, uint8_t bsb,
                                  uint16_t addr, uint8_t value);
+#if W5500_VERBOSE_DIAG
 static uint16_t w5500_dbg_read16(FAR struct spi_dev_s *spi, uint8_t bsb,
                                  uint16_t addr);
+#endif
 static int  gd32_w5500_isr(int irq, FAR void *context, FAR void *arg);
 static int  gd32_w5500_attach(const struct w5500_lower_s *lower,
                               xcpt_t handler, FAR void *arg);
@@ -146,7 +155,9 @@ static int gd32_w5500_poll_task(int argc, FAR char *argv[])
 {
   FAR struct spi_dev_s *spi;
   int ticks_mac  = 0;   /* MAC watchdog ticks */
+#if W5500_VERBOSE_DIAG
   int ticks_dump = 0;   /* chip register dump ticks */
+#endif
 
   syslog(LOG_INFO, "W5500 poll thread started\n");
 
@@ -187,8 +198,10 @@ static int gd32_w5500_poll_task(int argc, FAR char *argv[])
             }
         }
 
-      /* Every 10s read chip registers directly to check RX activity */
+      /* Every 10s read chip registers directly to check RX activity.
+       * Off by default: see W5500_VERBOSE_DIAG. */
 
+#if W5500_VERBOSE_DIAG
       if (spi != NULL && ++ticks_dump >= (10000000 / W5500_POLL_INTERVAL))
         {
           uint8_t verr;
@@ -232,6 +245,7 @@ static int gd32_w5500_poll_task(int argc, FAR char *argv[])
                  g_w5500_last_sir, (unsigned long)g_w5500_sir_hits,
                  (int)gd32_gpio_read(GPIO_W5500_INTR));
         }
+#endif
     }
 
   return 0;
@@ -283,6 +297,7 @@ static void w5500_dbg_write8(FAR struct spi_dev_s *spi, uint8_t bsb,
   SPI_LOCK(spi, false);
 }
 
+#if W5500_VERBOSE_DIAG
 static uint16_t w5500_dbg_read16(FAR struct spi_dev_s *spi, uint8_t bsb,
                                  uint16_t addr)
 {
@@ -291,15 +306,20 @@ static uint16_t w5500_dbg_read16(FAR struct spi_dev_s *spi, uint8_t bsb,
 
   return (uint16_t)((hi << 8) | lo);
 }
+#endif
 
 static int gd32_w5500_isr(int irq, FAR void *context, FAR void *arg)
 {
   uint32_t count = ++g_w5500_irq_count;
 
+#if W5500_VERBOSE_DIAG
   if (count <= 5 || (count % 500) == 0)
     {
       _info("W5500 IRQ count = %lu\n", (unsigned long)count);
     }
+#else
+  (void)count;
+#endif
 
   return g_w5500_lower.handler(irq, context, arg);
 }

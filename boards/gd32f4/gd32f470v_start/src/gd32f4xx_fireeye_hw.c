@@ -126,12 +126,23 @@
 
 #define FIREEYE_LED_ACTIVE_HIGH  1
 
-/* Relay module (JQC-3FF-S-Z, 5V coil) is usually active low:
- * low output -> coil energised -> NO closes / NC opens.
- * Set the macro below to 0 if the measured behaviour is opposite. */
+/* Relay module (JQC-3FF-S-Z, 5V coil).  The trigger polarity belongs to
+ * the module (some boards have a HIGH/LOW jumper), so it must match the
+ * module actually in use -- see the measurement notes below. */
 
-/* Measured 2026-09-13: fan stops at NORMAL, so low-level trigger = 1 */
-#define FIREEYE_RELAY_ACTIVE_LOW  1
+/* The module in use is HIGH-level triggered, measured 2026-09-18 on the
+ * real board with the load wired to COM/NC and fireeye NOT running (board
+ * bring-up drives PB0 HIGH at that point):
+ *   - IN wire off (floating): relay released, NC closed, fan runs;
+ *   - IN wire on PB0 (HIGH):  relay pulled in,  NC open,  fan stops.
+ * A floating input cannot drive the opto coupler, so the second case proves
+ * that HIGH is the active level.  An earlier "LOW-level triggered" note
+ * (2026-09-13) was inferred from a negative current reading and was wrong.
+ * With this polarity a HIGH output energises the coil and opens NC, which
+ * cuts the load on alarm.  Re-check with `nsh> fireeye level` whenever the
+ * relay module is replaced. */
+
+#define FIREEYE_RELAY_ACTIVE_LOW  0
 
 /* Buzzer is high-active on this active buzzer module */
 
@@ -228,9 +239,12 @@ int gd32_fireeye_hw_initialize(void)
   gd32_gpio_config(GPIO_FIREEYE_KEY);
   gd32_gpio_config(GPIO_FIREEYE_ALARM_LED);
 
-  /* Default outputs: relay off, buzzer silent */
+  /* Default outputs: relay pulled in, buzzer silent.  Pulling the relay in
+   * keeps the load de-energised (NC open) from board bring-up until the
+   * fireeye application reaches STATE_NORMAL, so a board that is powered but
+   * not running the monitor never feeds the charging loop. */
 
-  gd32_fireeye_set_relay(false);
+  gd32_fireeye_set_relay(true);
   gd32_fireeye_set_buzzer(false);
   gd32_fireeye_set_alarm_led(false);
 
